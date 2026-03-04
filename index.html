@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Martinee Store</title>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+  </script>
+  <script>
+    window.onerror = function (message, source, lineno, colno, error) {
+      document.body.innerHTML = `
+          <div style="padding: 20px; background: #fee; color: red; font-family: monospace; font-size: 16px;">
+            <h1>Global Error Caught</h1>
+            <p><strong>Message:</strong> ${message}</p>
+            <p><strong>Source:</strong> ${source}:${lineno}:${colno}</p>
+            <button onclick="localStorage.clear(); window.location.reload();" style="padding: 10px; background: red; color: white; border: none; cursor: pointer;">
+              Reset Data & Reload
+            </button>
+          </div>
+        `;
+      return false;
+    };
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>
