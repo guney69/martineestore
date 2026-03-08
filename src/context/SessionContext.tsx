@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { generateUUID } from '../utils/random';
 import { useDataLayer } from '../hooks/useDataLayer';
 import { CartItem } from '../types/cart';
+import * as braze from '@braze/web-sdk';
 
 interface Order {
     id: string;
@@ -57,6 +58,8 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
             try {
                 const parsed = JSON.parse(storedUser);
                 setUser(parsed);
+                // Optional: Identify on restore as well if desired, 
+                // but user asked specifically "when user logs in".
             } catch (e) {
                 console.error("Failed to parse stored user", e);
                 localStorage.removeItem('martinee_user');
@@ -87,6 +90,9 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     const login = (userId: string) => {
         const newSession = refreshSession();
 
+        // Braze: Identify user
+        braze.changeUser(userId);
+
         // Check if user has stored data
         const storedUser = localStorage.getItem(`user_${userId}`);
         let newUser: User;
@@ -98,8 +104,6 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
                 points: parsed.points + 100 // Login bonus
             };
         } else {
-            // New User? This is logically weird if login called without signup, 
-            // but for simulator we just create it.
             newUser = {
                 id: userId,
                 points: 100,
@@ -123,6 +127,11 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     };
 
     const signup = (userId: string) => {
+        const newSession = sessionId;
+
+        // Braze: Identify user
+        braze.changeUser(userId);
+
         const newUser: User = {
             id: userId,
             points: 0,
@@ -139,7 +148,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
             event_name: 'sign_up_completed',
             event_description: 'User signed up',
             user_id: userId,
-            session_id: sessionId,
+            session_id: newSession,
             additional_params: {}
         });
 
@@ -148,7 +157,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
             event_name: 'coupon_issued',
             event_description: 'Welcome coupon issued',
             user_id: userId,
-            session_id: sessionId,
+            session_id: newSession,
             additional_params: { coupon_id: 'WELCOME_10_PERCENT' }
         });
     };
@@ -168,6 +177,8 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         setUser(null);
         localStorage.removeItem('martinee_user');
         refreshSession();
+        // Option: braze.changeUser(null) to go back to anonymous, 
+        // but Braze usually handles this by clearing session.
     };
 
     return (
