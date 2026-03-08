@@ -1,4 +1,6 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { App as CapacitorApp } from '@capacitor/app';
 import { Layout } from './components/layout/Layout';
 import { MainPage } from './pages/MainPage';
 import { LoginPage } from './pages/LoginPage';
@@ -15,9 +17,50 @@ import { MyPage } from './pages/MyPage';
 import { CouponsPage } from './pages/CouponsPage';
 import { CustomerCenterPage } from './pages/CustomerCenterPage';
 
+function DeepLinkHandler() {
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        CapacitorApp.addListener('appUrlOpen', (event: any) => {
+            // Example URL: martinee://product/123
+            const url = new URL(event.url);
+            const path = url.pathname || ""; // For scheme like martinee://home, path might be empty and host is 'home'
+            const host = url.host;
+
+            console.log('Deep Link URL:', event.url);
+            console.log('Host:', host, 'Path:', path);
+
+            // Mapping: martinee://[host]/[path]
+            if (host === 'home') {
+                navigate('/');
+            } else if (host === 'login') {
+                navigate('/login');
+            } else if (host === 'mypage') {
+                navigate('/mypage');
+            } else if (host === 'product') {
+                const id = path.split('/')[1];
+                if (id) navigate(`/product/${id}`);
+            } else if (host === 'category') {
+                const id = path.split('/')[1];
+                if (id) navigate(`/categories/${id}`);
+            } else if (host === 'brand') {
+                const id = path.split('/')[1];
+                if (id) navigate(`/brands/${id}`);
+            }
+        });
+
+        return () => {
+            CapacitorApp.removeAllListeners();
+        };
+    }, [navigate]);
+
+    return null;
+}
+
 function App() {
     return (
         <BrowserRouter>
+            <DeepLinkHandler />
             <Routes>
                 <Route path="/" element={<Layout />}>
                     <Route index element={<MainPage />} />
