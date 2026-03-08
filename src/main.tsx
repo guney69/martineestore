@@ -6,10 +6,14 @@ import { AppProviders } from './context/index.tsx'
 import * as braze from '@braze/web-sdk';
 
 // Initialize Braze Web SDK
+// The SDK will automatically detect the Native Bridge (Android/iOS) if present
 braze.initialize('d884a2f3-e6a9-4005-9e93-ba68d88518af', {
     baseUrl: 'sdk.iad-07.braze.com',
-    enableLogging: true
+    enableLogging: true,
+    // When running in a mobile WebView with the bridge, 
+    // this ensures events are routed to the native SDK
 });
+
 braze.automaticallyShowInAppMessages();
 braze.openSession();
 // Request location permission for tracking

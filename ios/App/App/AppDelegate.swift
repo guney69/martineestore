@@ -16,10 +16,28 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let braze = Braze(configuration: configuration)
         AppDelegate.braze = braze
 
+        // Wait for Capacitor Bridge to load and inject the WebView Bridge
+        NotificationCenter.default.addObserver(forName: NSNotification.Name(rawValue: "CapacitorBridgeDidLoad"), object: nil, queue: .main) { [weak self] _ in
+            self?.setupBrazeBridge()
+        }
+
         return true
     }
 
     static var braze: Braze? = nil
+
+    private func setupBrazeBridge() {
+        // Access the Capacitor WebView and add the Braze script message handler
+        guard let bridgeVC = window?.rootViewController as? CAPBridgeViewController,
+              let webView = bridgeVC.webView,
+              let braze = AppDelegate.braze else {
+            return
+        }
+
+        let scriptMessageHandler = braze.webMessageHandler(for: webView)
+        webView.configuration.userContentController.add(scriptMessageHandler, name: Braze.WebMessageHandler.name)
+        print("✅ [Braze] iOS WebView Bridge Injected")
+    }
 
     func applicationWillResignActive(_ application: UIApplication) {
         // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
