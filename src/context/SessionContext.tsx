@@ -58,8 +58,10 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
             try {
                 const parsed = JSON.parse(storedUser);
                 setUser(parsed);
-                // Optional: Identify on restore as well if desired, 
-                // but user asked specifically "when user logs in".
+
+                // Braze: Re-identify user on page load/restoral
+                console.log(`[Braze] Identifying user on restoral: ${parsed.id}`);
+                braze.changeUser(parsed.id);
             } catch (e) {
                 console.error("Failed to parse stored user", e);
                 localStorage.removeItem('martinee_user');
@@ -91,6 +93,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         const newSession = refreshSession();
 
         // Braze: Identify user
+        console.log(`[Braze] Identifying user on login: ${userId}`);
         braze.changeUser(userId);
 
         // Check if user has stored data
@@ -130,6 +133,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         const newSession = sessionId;
 
         // Braze: Identify user
+        console.log(`[Braze] Identifying user on signup: ${userId}`);
         braze.changeUser(userId);
 
         const newUser: User = {
