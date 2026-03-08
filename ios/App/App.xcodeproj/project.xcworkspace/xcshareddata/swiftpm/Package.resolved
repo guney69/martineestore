@@ -1,6 +1,15 @@
 {
-  "originHash" : "2f28ea1854f8c463746cbf9550237a5f6b0a8b5e28433121ab833bc35ffa220e",
+  "originHash" : "0d8659363698059a498d381b4957fa332360594eda028ade6dc13a17191ac47d",
   "pins" : [
+    {
+      "identity" : "braze-swift-sdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/braze-inc/braze-swift-sdk",
+      "state" : {
+        "revision" : "ba8ef4e94f47d36e77392a2291d918785fbdb363",
+        "version" : "14.0.3"
+      }
+    },
     {
       "identity" : "capacitor-swift-pm",
       "kind" : "remoteSourceControl",
@@ -8,6 +17,15 @@
       "state" : {
         "revision" : "13a39179b3df796f3bb2e70c47ccdd92593f34d2",
         "version" : "8.0.2"
+      }
+    },
+    {
+      "identity" : "sdwebimage",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SDWebImage/SDWebImage.git",
+      "state" : {
+        "revision" : "2de3a496eaf6df9a1312862adcfd54acd73c39c0",
+        "version" : "5.21.7"
       }
     }
   ],

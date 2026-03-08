@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="com_braze_api_key">84401cfa-6bcb-4918-a5d8-6110a1a694f3</string>
+    <string name="com_braze_custom_endpoint_base_url">sdk.iad-07.braze.com</string>
+    <bool name="com_braze_session_tracking_enabled">true</bool>
+</resources>

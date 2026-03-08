@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import BrazeKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -7,9 +8,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Initialize Braze
+        let configuration = Braze.Configuration(
+            apiKey: "1edd8a9f-feb5-4e97-87dc-5f5fc5904f8a",
+            endpoint: "sdk.iad-07.braze.com"
+        )
+        let braze = Braze(configuration: configuration)
+        AppDelegate.braze = braze
+
         return true
     }
+
+    static var braze: Braze? = nil
 
     func applicationWillResignActive(_ application: UIApplication) {
         // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
