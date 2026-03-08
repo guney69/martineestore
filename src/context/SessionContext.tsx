@@ -52,6 +52,11 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         setSessionId(newSessionId!);
         localStorage.setItem('martinee_last_active', now.toString());
 
+        // Check for Native Bridge presence
+        const isAndroidBridge = !!(window as any).AppboyJavascriptInterface;
+        const isIosBridge = !!(window as any).webkit?.messageHandlers?.brazeWebMessageHandler;
+        console.log(`📊 [Braze] Bridge Status - Android: ${isAndroidBridge}, iOS: ${isIosBridge}`);
+
         // Restore user if exists
         const storedUser = localStorage.getItem('martinee_user');
         if (storedUser) {
