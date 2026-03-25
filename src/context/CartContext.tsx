@@ -3,6 +3,7 @@ import { Product } from '../types/product';
 import { CartItem } from '../types/cart';
 import { useDataLayer } from '../hooks/useDataLayer';
 import { useSession } from './SessionContext';
+import { formatProductForBraze } from '../utils/analyticsHelpers';
 
 interface CartContextType {
     items: CartItem[];
@@ -51,43 +52,36 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             event_category: 'commerce',
             event_name: 'item_added_to_cart',
             event_description: 'Item added to cart',
-            user_id: null, // Will be filled by context if not specific? No, user_id comes from Session usually.
-            // Wait, useDataLayer doesn't auto-fill user_id from session? 
-            // It does NOT. We need to pass it.
-            // But we are inside CartProvider, we can get it from SessionContext.
-            // Actually useDataLayer doesn't take user ID from context automatically.
-            // We should pass it manually or make useDataLayer aware of session. 
-            // For now, let's pass null and rely on the fact that we might update useDataLayer later 
-            // OR we just pass `session.user?.id` here if we had it.
-            // Let's grab user from useSession
-            // We have sessionId, but user object?
-            // const { user } = useSession();
-            // Let's add user to destructuring above.
-
+            user_id: null, 
             session_id: sessionId,
-            additional_params: {
-                product_id: product.id,
-                product_name: product.name,
-                price: product.price,
-                size,
-                color
-            }
+            additional_params: formatProductForBraze(product, {
+                item_size: size,
+                item_color: color
+            })
         });
     };
 
     const removeFromCart = (productId: string, size: string, color: string) => {
+        // Find the product being removed to log its details
+        const itemToRemove = items.find(item => item.id === productId && item.selectedSize === size && item.selectedColor === color);
+
         setItems(prev => prev.filter(item =>
             !(item.id === productId && item.selectedSize === size && item.selectedColor === color)
         ));
 
-        pushEvent({
-            event_category: 'commerce',
-            event_name: 'item_deleted_from_cart',
-            event_description: 'Item removed from cart',
-            user_id: null,
-            session_id: sessionId,
-            additional_params: { product_id: productId, size, color }
-        });
+        if (itemToRemove) {
+            pushEvent({
+                event_category: 'commerce',
+                event_name: 'item_deleted_from_cart',
+                event_description: 'Item removed from cart',
+                user_id: null,
+                session_id: sessionId,
+                additional_params: formatProductForBraze(itemToRemove, {
+                    item_size: size,
+                    item_color: color
+                })
+            });
+        }
     };
 
     const clearCart = () => {

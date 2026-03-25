@@ -167,7 +167,12 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
             event_description: 'Welcome coupon issued',
             user_id: userId,
             session_id: newSession,
-            additional_params: { coupon_id: 'WELCOME_10_PERCENT' }
+            additional_params: { 
+                coupon_name: 'Welcome Sign-up Bonus',
+                coupon_id: 'WELCOME_10_PERCENT',
+                coupon_type: 'Welcome',
+                coupon_exp_date: '2026-12-31'
+            }
         });
     };
 

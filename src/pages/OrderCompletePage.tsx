@@ -8,16 +8,35 @@ export const OrderCompletePage: React.FC = () => {
     const { pushEvent } = useDataLayer();
     const { user, sessionId } = useSession();
 
+    const order = user?.orders.find(o => o.id === orderId);
+
     useEffect(() => {
+        if (!order) return;
         pushEvent({
             event_category: 'commerce',
             event_name: 'order_completed',
             event_description: 'User viewed order complete page',
             user_id: user?.id || null,
             session_id: sessionId,
-            additional_params: { order_id: orderId }
+            additional_params: {
+                category1_name: order.items.map(i => i.category),
+                brand_name: order.items.map(i => i.brand),
+                item_name: order.items.map(i => i.name),
+                item_id: order.items.map(i => i.id),
+                item_org_price: order.items.map(i => i.original_price),
+                item_price: order.items.map(i => i.price),
+                item_discount_rate: order.items.map(i => Number((i.discount_rate / 100).toFixed(2))),
+                isSoldout: order.items.map(i => i.stock <= 0),
+                item_img: order.items.map(i => i.image_url),
+                item_size: order.items.map(i => i.selectedSize),
+                item_color: order.items.map(i => i.selectedColor),
+                coupon_name: user?.coupons.length ? 'Welcome Sign-up Bonus' : '',
+                coupon_id: user?.coupons.length ? 'WELCOME_10_PERCENT' : '',
+                coupon_type: user?.coupons.length ? 'Welcome' : '',
+                coupon_exp_date: user?.coupons.length ? '2026-12-31' : ''
+            }
         });
-    }, [orderId, sessionId, user?.id]);
+    }, [orderId, sessionId, user?.id, order]);
 
     return (
         <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4 bg-white">

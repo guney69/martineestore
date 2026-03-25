@@ -21,7 +21,7 @@ export const Header: React.FC = () => {
             event_description: 'User searched for a term',
             user_id: user?.id || null,
             session_id: sessionId,
-            additional_params: { search_term: searchTerm }
+            additional_params: { keyword: searchTerm }
         });
 
         navigate(`/search?q=${encodeURIComponent(searchTerm)}`);

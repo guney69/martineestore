@@ -23,7 +23,19 @@ export const CheckoutPage: React.FC = () => {
             event_description: 'User clicked place order',
             user_id: user?.id || null,
             session_id: sessionId,
-            additional_params: { total_amount: totalAmount }
+            additional_params: {
+                category1_name: items.map(i => i.category),
+                brand_name: items.map(i => i.brand),
+                item_name: items.map(i => i.name),
+                item_id: items.map(i => i.id),
+                item_org_price: items.map(i => i.original_price),
+                item_price: items.map(i => i.price),
+                item_discount_rate: items.map(i => Number((i.discount_rate / 100).toFixed(2))),
+                isSoldout: items.map(i => i.stock <= 0),
+                item_img: items.map(i => i.image_url),
+                item_size: items.map(i => i.selectedSize),
+                item_color: items.map(i => i.selectedColor)
+            }
         });
 
         // Simulate API delay
@@ -50,10 +62,18 @@ export const CheckoutPage: React.FC = () => {
             user_id: user?.id || null,
             session_id: sessionId,
             additional_params: {
-                order_id: orderId,
-                total_amount: totalAmount,
-                currency: 'KRW',
-                products: items.map(i => ({ id: i.id, quantity: i.quantity, price: i.price }))
+                category1_name: items.map(i => i.category),
+                brand_name: items.map(i => i.brand),
+                item_name: items.map(i => i.name),
+                item_id: items.map(i => i.id),
+                item_org_price: items.map(i => i.original_price),
+                item_price: items.map(i => i.price),
+                item_discount_rate: items.map(i => Number((i.discount_rate / 100).toFixed(2))),
+                isSoldout: items.map(i => i.stock <= 0),
+                item_img: items.map(i => i.image_url),
+                item_size: items.map(i => i.selectedSize),
+                item_color: items.map(i => i.selectedColor)
+                // Assuming no coupon applied for now, could add coupon properties here if supported
             }
         });
 

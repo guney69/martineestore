@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useDataLayer } from '../hooks/useDataLayer';
 import { useSession } from '../context/SessionContext';
 import { formatPrice } from '../utils/format';
+import { formatProductForBraze } from '../utils/analyticsHelpers';
 
 export const ProductDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -27,12 +28,7 @@ export const ProductDetailPage: React.FC = () => {
                 event_description: 'Product detail page viewed',
                 user_id: null,
                 session_id: sessionId,
-                additional_params: {
-                    product_id: product.id,
-                    product_name: product.name,
-                    price: product.price,
-                    category: product.category
-                }
+                additional_params: formatProductForBraze(product)
             });
         }
     }, [product, sessionId]);
@@ -61,7 +57,14 @@ export const ProductDetailPage: React.FC = () => {
             event_description: 'User toggled like',
             user_id: null,
             session_id: sessionId,
-            additional_params: { product_id: product.id }
+            additional_params: { 
+                category1_name: product.category,
+                category1_id: null,
+                brand_name: product.brand,
+                brand_id: null,
+                item_name: product.name,
+                item_id: product.id
+            }
         });
     };
 
