@@ -25,7 +25,9 @@ export const ProductListPage: React.FC<{ type: 'category' | 'brand' }> = ({ type
             event_description: `User viewed ${type} list`,
             user_id: null,
             session_id: '',
-            additional_params: { [type]: id }
+            additional_params: type === 'category' 
+                ? { category1_name: id, category1_id: null }
+                : { brand_name: id, brand_id: null }
         });
     }, [id, type]);
 

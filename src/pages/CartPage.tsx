@@ -20,8 +20,15 @@ export const CartPage: React.FC = () => {
             user_id: null,
             session_id: sessionId,
             additional_params: {
-                total_amount: totalAmount,
-                item_count: items.length
+                category1_name: items.map(i => i.category),
+                brand_name: items.map(i => i.brand),
+                item_name: items.map(i => i.name),
+                item_id: items.map(i => i.id),
+                item_org_price: items.map(i => i.original_price),
+                item_price: items.map(i => i.price),
+                item_discount_rate: items.map(i => Number((i.discount_rate / 100).toFixed(2))),
+                isSoldout: items.map(i => i.stock <= 0),
+                cart_total_price: totalAmount
             }
         });
     }, [sessionId, totalAmount, items.length]);
