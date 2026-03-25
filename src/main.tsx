@@ -4,6 +4,7 @@ import App from './App.tsx'
 import './index.css'
 import { AppProviders } from './context/index.tsx'
 import * as braze from '@braze/web-sdk';
+import * as amplitude from '@amplitude/analytics-browser';
 
 // Initialize Braze Web SDK
 // The SDK will automatically detect the Native Bridge (Android/iOS) if present
@@ -20,6 +21,16 @@ braze.automaticallyShowInAppMessages();
 braze.openSession();
 // Request location permission for tracking
 // braze.requestLocationPermission(); // Note: This should usually be triggered by a user action.
+
+// Initialize Amplitude Browser SDK 2
+amplitude.init('8d5db2caf7854f49baad6adfb3101257', {
+    logLevel: amplitude.Types.LogLevel.Warn,
+    defaultTracking: false, // 자동 트래킹 비활성화 (수동 이벤트만 사용)
+});
+
+// Make amplitude globally available for sdkAdapters and debugging
+(window as any).amplitude = amplitude;
+console.log('✅ [Amplitude] Browser SDK Initialized and attached to window');
 
 
 
