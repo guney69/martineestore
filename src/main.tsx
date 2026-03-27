@@ -10,9 +10,9 @@ const isDev = import.meta.env.DEV;
 
 // Initialize Braze Web SDK
 // The SDK will automatically detect the Native Bridge (Android/iOS) if present
-braze.initialize(import.meta.env.VITE_BRAZE_API_KEY, {
-    baseUrl: import.meta.env.VITE_BRAZE_BASE_URL,
-    enableLogging: isDev, // 개발 환경에서만 로깅 활성화
+braze.initialize(import.meta.env.VITE_BRAZE_API_KEY ?? 'd884a2f3-e6a9-4005-9e93-ba68d88518af', {
+    baseUrl: import.meta.env.VITE_BRAZE_BASE_URL ?? 'sdk.iad-07.braze.com',
+    enableLogging: isDev,
 });
 
 // Make braze globally available for sdkAdapters and debugging
@@ -25,7 +25,7 @@ braze.openSession();
 // braze.requestLocationPermission(); // Note: This should usually be triggered by a user action.
 
 // Initialize Amplitude Browser SDK 2
-amplitude.init(import.meta.env.VITE_AMPLITUDE_API_KEY, {
+amplitude.init(import.meta.env.VITE_AMPLITUDE_API_KEY ?? '8d5db2caf7854f49baad6adfb3101257', {
     logLevel: isDev ? amplitude.Types.LogLevel.Warn : amplitude.Types.LogLevel.None,
     defaultTracking: false, // 자동 트래킹 비활성화 (수동 이벤트만 사용)
 });
