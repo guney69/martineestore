@@ -39,7 +39,8 @@ export const BrazePlacements: React.FC = () => {
 
         if (typeof brazeObj.subscribeToBannersUpdates === 'function') {
             bannerSubscription = brazeObj.subscribeToBannersUpdates((updates: any) => {
-                const b = (updates || []).map((banner: any) => ({
+                const bannerList = updates ? Object.values(updates).filter(Boolean) : [];
+                const b = bannerList.map((banner: any) => ({
                     id: banner.id,
                     description: banner.html || banner.text || '', // Adapting to structure
                 }));
