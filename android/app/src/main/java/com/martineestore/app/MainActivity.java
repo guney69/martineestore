@@ -4,7 +4,8 @@ import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
 import com.braze.Braze;
 import com.braze.support.BrazeLogger;
-import com.braze.js.InAppMessageJavascriptInterface;
+import com.braze.ui.inappmessage.jsinterface.InAppMessageJavascriptInterface;
+import com.braze.ui.inappmessage.BrazeInAppMessageManager;
 
 public class MainActivity extends BridgeActivity {
     @Override
@@ -14,10 +15,21 @@ public class MainActivity extends BridgeActivity {
         // Enable Braze location tracking
         Braze.getInstance(this).requestLocationInitialization();
 
-        // Inject Braze WebView Bridge
-        // This allows the Braze Web SDK to talk to the Native Android SDK
-        if (getBridge() != null && getBridge().getWebView() != null) {
-            getBridge().getWebView().addJavascriptInterface(new InAppMessageJavascriptInterface(this), "AppboyJavascriptInterface");
-        }
+        // Ensure Activity is subscribed to IAM events
+        BrazeInAppMessageManager.getInstance().ensureSubscribedToInAppMessageEvents(this);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Register InAppMessageManager for Activity
+        BrazeInAppMessageManager.getInstance().registerInAppMessageManager(this);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        // Unregister InAppMessageManager
+        BrazeInAppMessageManager.getInstance().unregisterInAppMessageManager(this);
     }
 }

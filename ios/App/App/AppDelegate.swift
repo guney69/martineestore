@@ -1,6 +1,7 @@
 import UIKit
 import Capacitor
 import BrazeKit
+import BrazeUI
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -15,6 +16,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         )
         let braze = Braze(configuration: configuration)
         AppDelegate.braze = braze
+
+        // Register Braze UI for native In-App Messages
+        let inAppMessageUI = BrazeInAppMessageUI()
+        braze.inAppMessagePresenter = inAppMessageUI
 
         // Wait for Capacitor Bridge to load and inject the WebView Bridge
         NotificationCenter.default.addObserver(forName: NSNotification.Name(rawValue: "CapacitorBridgeDidLoad"), object: nil, queue: .main) { [weak self] _ in

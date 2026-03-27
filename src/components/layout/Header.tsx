@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSession } from '../../context/SessionContext';
 import { useCart } from '../../context/CartContext';
 import { useDataLayer } from '../../hooks/useDataLayer';
+import { BrazePlacements } from '../braze/BrazePlacements';
 
 export const Header: React.FC = () => {
     const { user, isAuthenticated, logout, sessionId } = useSession();
@@ -93,6 +94,7 @@ export const Header: React.FC = () => {
                     </div>
                 </div>
             </div>
+            <BrazePlacements />
         </header>
     );
 };
