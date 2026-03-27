@@ -16,12 +16,17 @@ export const BrazePlacements: React.FC = () => {
     useEffect(() => {
         // Subscribe to Content Cards
         const cardSubscription = braze.subscribeToContentCardsUpdates((updates) => {
+            console.log('✅ [Braze] Raw Content Cards received:', updates.cards);
+
             // Filter Content Cards by explicit placement_id in extras, or display all if unspecified.
-            // Braze Dashboard 설정 시 Key-Value (extras) 에 placement_id: 'gnb_content_card' 를 넣으시면 됩니다.
             const placementId = 'gnb_content_card';
-            const filteredCards = updates.cards.filter(card => 
-                (card as any).extras?.placement_id === placementId
-            );
+            const filteredCards = updates.cards.filter(card => {
+                const cardExtras = (card as any).extras || {};
+                console.log(`🔍 [Braze] Card ID: ${card.id}, Extras:`, cardExtras);
+                return String(cardExtras.placement_id).trim() === placementId;
+            });
+
+            console.log('🎯 [Braze] Filtered Content Cards for placement:', filteredCards);
 
             const cards = filteredCards.map(card => ({
                 id: card.id as string,
