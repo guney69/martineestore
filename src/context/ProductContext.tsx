@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import Papa from 'papaparse';
-import { Product } from '../types/product'; // Removed CATEGORIES, BRANDS imports as they will be dynamic
+import { Product } from '../types/product';
 import { getRandomInt } from '../utils/random';
+import { STORAGE_KEYS } from '../constants';
 // @ts-ignore
 import productsCsvText from '../assets/products.csv?raw';
 
@@ -26,7 +27,7 @@ interface CsvProductRow {
     category_depth2_name: string;
     brand_id: string;
     brand_name: string;
-    original_price: string; // CSV numbers are strings
+    original_price: string;
     discount_amount: string;
     discounted_price: string;
     img_url: string;
@@ -39,23 +40,30 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     useEffect(() => {
         const loadProducts = () => {
-            // Check local storage first
-            const stored = localStorage.getItem('martinee_products');
+            // localStorage 캐시 확인 (검증 포함)
+            const stored = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
             if (stored) {
-                const parsed: Product[] = JSON.parse(stored);
-                // Check if data is legacy (dummy data IDs start with 'prod_')
-                // If so, discard it and load from CSV.
-                if (parsed.length > 0 && parsed[0].id.startsWith('prod_')) {
-                    console.log("Legacy data detected. Clearing and reloading from CSV.");
-                    localStorage.removeItem('martinee_products');
-                } else {
-                    setProducts(parsed);
-                    extractMetadata(parsed);
-                    return;
+                try {
+                    const parsed: Product[] = JSON.parse(stored);
+                    if (!Array.isArray(parsed)) {
+                        throw new Error('Products cache is not an array');
+                    }
+                    // 레거시 더미 데이터 감지 시 제거 후 CSV 재로드
+                    if (parsed.length > 0 && parsed[0].id.startsWith('prod_')) {
+                        console.log('[ProductContext] Legacy data detected. Clearing and reloading from CSV.');
+                        localStorage.removeItem(STORAGE_KEYS.PRODUCTS);
+                    } else {
+                        setProducts(parsed);
+                        extractMetadata(parsed);
+                        return;
+                    }
+                } catch (e) {
+                    console.error('[ProductContext] Failed to parse stored products:', e);
+                    localStorage.removeItem(STORAGE_KEYS.PRODUCTS);
                 }
             }
 
-            // Parse CSV
+            // CSV 파싱
             Papa.parse<CsvProductRow>(productsCsvText, {
                 header: true,
                 skipEmptyLines: true,
@@ -81,16 +89,16 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
                                 sizes: ['S', 'M', 'L', 'XL'],
                                 colors: ['Black', 'White', 'Navy', 'Gray']
                             },
-                            sales_count: getRandomInt(0, 1000) // Initial random sales for ranking
+                            sales_count: getRandomInt(0, 1000)
                         };
                     });
 
                     setProducts(loadedProducts);
                     extractMetadata(loadedProducts);
-                    localStorage.setItem('martinee_products', JSON.stringify(loadedProducts));
+                    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(loadedProducts));
                 },
-                error: (error: Error) => { // Type annotation for error
-                    console.error("CSV Parse Error:", error);
+                error: (error: Error) => {
+                    console.error('[ProductContext] CSV Parse Error:', error);
                 }
             });
         };
@@ -99,10 +107,8 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     }, []);
 
     const extractMetadata = (items: Product[]) => {
-        const uniqueCategories = Array.from(new Set(items.map(p => p.category)));
-        const uniqueBrands = Array.from(new Set(items.map(p => p.brand)));
-        setCategories(uniqueCategories);
-        setBrands(uniqueBrands);
+        setCategories(Array.from(new Set(items.map(p => p.category))));
+        setBrands(Array.from(new Set(items.map(p => p.brand))));
     };
 
     const toggleLike = (productId: string) => {
@@ -110,7 +116,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
             const newProducts = prev.map(p =>
                 p.id === productId ? { ...p, is_liked: !p.is_liked } : p
             );
-            localStorage.setItem('martinee_products', JSON.stringify(newProducts));
+            localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(newProducts));
             return newProducts;
         });
     };
@@ -119,24 +125,28 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
         setProducts(prev => {
             const newProducts = prev.map(p => ({
                 ...p,
-                sales_count: getRandomInt(0, 1000) // Randomize sales to shift ranking
+                sales_count: getRandomInt(0, 1000)
             }));
-            localStorage.setItem('martinee_products', JSON.stringify(newProducts));
+            localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(newProducts));
             return newProducts;
         });
     };
 
     const getProduct = (id: string) => products.find(p => p.id === id);
 
+    // Context value 메모이제이션 — 불필요한 하위 컴포넌트 리렌더 방지
+    const value = useMemo<ProductContextType>(() => ({
+        products,
+        categories,
+        brands,
+        toggleLike,
+        refreshRanking,
+        getProduct,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }), [products, categories, brands]);
+
     return (
-        <ProductContext.Provider value={{
-            products,
-            categories,
-            brands,
-            toggleLike,
-            refreshRanking,
-            getProduct
-        }}>
+        <ProductContext.Provider value={value}>
             {children}
         </ProductContext.Provider>
     );

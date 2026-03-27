@@ -1,12 +1,14 @@
 import React, { useEffect } from 'react';
 import { useProduct } from '../context/ProductContext';
 import { useDataLayer } from '../hooks/useDataLayer';
+import { useSession } from '../context/SessionContext';
 import { Link } from 'react-router-dom';
 import { formatPrice } from '../utils/format';
 
 export const MainPage: React.FC = () => {
     const { products } = useProduct();
     const { pushEvent } = useDataLayer();
+    const { sessionId } = useSession();
 
     // Get top ranking products
     const rankingProducts = [...products]
@@ -19,10 +21,12 @@ export const MainPage: React.FC = () => {
             event_name: 'main_page_viewed',
             event_description: 'Main page viewed',
             user_id: null,
-            session_id: '',
+            session_id: sessionId,
             additional_params: {}
         });
-    }, []);
+    // sessionId가 초기화된 이후 한 번만 실행
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sessionId]);
 
     return (
         <div className="bg-white">
