@@ -67,6 +67,8 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
                 // Braze: Re-identify user on page load/restoral
                 console.log(`[Braze] Identifying user on restoral: ${parsed.id}`);
                 braze.changeUser(parsed.id);
+                // changeUser() 후 반드시 Content Cards를 재요청해야 식별된 유저의 카드가 수신됨
+                braze.requestContentCardsRefresh();
             } catch (e) {
                 console.error("Failed to parse stored user", e);
                 localStorage.removeItem('martinee_user');
@@ -100,6 +102,8 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         // Braze: Identify user
         console.log(`[Braze] Identifying user on login: ${userId}`);
         braze.changeUser(userId);
+        // changeUser() 후 반드시 Content Cards를 재요청해야 식별된 유저의 카드가 수신됨
+        braze.requestContentCardsRefresh();
 
         // Check if user has stored data
         const storedUser = localStorage.getItem(`user_${userId}`);
@@ -140,6 +144,8 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         // Braze: Identify user
         console.log(`[Braze] Identifying user on signup: ${userId}`);
         braze.changeUser(userId);
+        // changeUser() 후 반드시 Content Cards를 재요청해야 식별된 유저의 카드가 수신됨
+        braze.requestContentCardsRefresh();
 
         const newUser: User = {
             id: userId,

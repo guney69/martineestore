@@ -16,12 +16,20 @@ export const BrazePlacements: React.FC = () => {
     useEffect(() => {
         // Subscribe to Content Cards
         const cardSubscription = braze.subscribeToContentCardsUpdates((updates) => {
+            console.log(`✅ [Braze] Content Cards 수신: 전체 ${updates.cards.length}개`);
+            console.log('[Braze] 원본 카드 목록:', updates.cards.map(c => ({ id: c.id, extras: (c as any).extras })));
+
             // Filter Content Cards by explicit placement_id in extras, or display all if unspecified.
             // Braze Dashboard 설정 시 Key-Value (extras) 에 placement_id: 'gnb_content_card' 를 넣으시면 됩니다.
             const placementId = 'gnb_content_card';
-            const filteredCards = updates.cards.filter(card => 
-                (card as any).extras?.placement_id === placementId
-            );
+            const filteredCards = updates.cards.filter(card => {
+                const extras = (card as any).extras || {};
+                const pid = extras['placement_id'];
+                // null/undefined 체크 + 대소문자/공백 무시
+                return pid != null && String(pid).trim() === placementId;
+            });
+
+            console.log(`🎯 [Braze] 필터링 후: ${filteredCards.length}개 (placement_id: ${placementId})`);
 
             const cards = filteredCards.map(card => ({
                 id: card.id as string,
@@ -39,9 +47,12 @@ export const BrazePlacements: React.FC = () => {
 
         if (typeof brazeObj.subscribeToBannersUpdates === 'function') {
             bannerSubscription = brazeObj.subscribeToBannersUpdates((updates: any) => {
-                const b = (updates || []).map((banner: any) => ({
+                // updates는 배열이 아니라 { [placementId: string]: Banner } 딕셔너리 객체임
+                const bannerList = updates ? Object.values(updates).filter(Boolean) : [];
+                console.log(`✅ [Braze] Banners 수신: ${bannerList.length}개`);
+                const b = bannerList.map((banner: any) => ({
                     id: banner.id,
-                    description: banner.html || banner.text || '', // Adapting to structure
+                    description: banner.html || banner.text || '',
                 }));
                 setBanners(b);
             });
