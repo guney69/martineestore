@@ -34,18 +34,20 @@ export const BrazePlacements: React.FC = () => {
     useEffect(() => {
         // Subscribe to Content Cards
         const cardSubscription = braze.subscribeToContentCardsUpdates((updates) => {
-            console.log('✅ [Braze] Raw Content Cards received:', updates.cards);
+            console.log(`✅ [Braze] Content Cards 수신: 전체 ${updates.cards.length}개`);
+            console.log('[Braze] 원본 카드 목록:', updates.cards.map(c => ({ id: c.id, extras: (c as any).extras })));
 
-            const placementId = BRAZE_PLACEMENTS.GNB_CONTENT_CARD;
+            // Filter Content Cards by explicit placement_id in extras, or display all if unspecified.
+            // Braze Dashboard 설정 시 Key-Value (extras) 에 placement_id: 'gnb_content_card' 를 넣으시면 됩니다.
+            const placementId = 'gnb_content_card';
             const filteredCards = updates.cards.filter(card => {
-                const cardExtras = (card as any).extras || {};
-                console.log(`🔍 [Braze] Card ID: ${card.id}, Extras:`, cardExtras);
-                // placement_id가 없으면 undefined → 필터링에서 제외
-                const pid = cardExtras.placement_id;
+                const extras = (card as any).extras || {};
+                const pid = extras['placement_id'];
+                // null/undefined 체크 + 대소문자/공백 무시
                 return pid != null && String(pid).trim() === placementId;
             });
 
-            console.log('🎯 [Braze] Filtered Content Cards for placement:', filteredCards);
+            console.log(`🎯 [Braze] 필터링 후: ${filteredCards.length}개 (placement_id: ${placementId})`);
 
             const cards = filteredCards.map(card => ({
                 id: card.id as string,
@@ -62,11 +64,12 @@ export const BrazePlacements: React.FC = () => {
 
         if (typeof brazeObj.subscribeToBannersUpdates === 'function') {
             bannerSubscription = brazeObj.subscribeToBannersUpdates((updates: any) => {
+                // updates는 배열이 아니라 { [placementId: string]: Banner } 딕셔너리 객체임
                 const bannerList = updates ? Object.values(updates).filter(Boolean) : [];
+                console.log(`✅ [Braze] Banners 수신: ${bannerList.length}개`);
                 const b = bannerList.map((banner: any) => ({
                     id: banner.id,
-                    // html 콘텐츠는 텍스트만 추출해 XSS 방지
-                    description: stripHtml(banner.html || banner.text || ''),
+                    description: banner.html || banner.text || '',
                 }));
                 setBanners(b);
             });
