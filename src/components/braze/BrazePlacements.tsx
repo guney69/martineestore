@@ -20,12 +20,6 @@ const isSafeUrl = (url: string): boolean => {
     }
 };
 
-/** HTML 태그를 제거하고 텍스트만 추출 (XSS 방지) */
-const stripHtml = (html: string): string => {
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    return tmp.textContent ?? tmp.innerText ?? '';
-};
 
 export const BrazePlacements: React.FC = () => {
     const [contentCards, setContentCards] = useState<BrazeCard[]>([]);
