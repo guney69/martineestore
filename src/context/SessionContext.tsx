@@ -1,8 +1,13 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { generateUUID } from '../utils/random';
 import { useDataLayer } from '../hooks/useDataLayer';
 import { CartItem } from '../types/cart';
 import * as braze from '@braze/web-sdk';
+import {
+    STORAGE_KEYS,
+    SESSION_TIMEOUT_MS,
+    ACTIVITY_DEBOUNCE_MS,
+} from '../constants';
 
 interface Order {
     id: string;
@@ -17,6 +22,18 @@ interface User {
     coupons: string[];
     orders: Order[];
 }
+
+/** User 인터페이스 기본 검증 */
+const isValidUser = (data: unknown): data is User => {
+    if (!data || typeof data !== 'object') return false;
+    const u = data as Record<string, unknown>;
+    return (
+        typeof u.id === 'string' &&
+        typeof u.points === 'number' &&
+        Array.isArray(u.coupons) &&
+        Array.isArray(u.orders)
+    );
+};
 
 interface SessionContextType {
     sessionId: string;
@@ -36,29 +53,30 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     const [user, setUser] = useState<User | null>(null);
     const { pushEvent } = useDataLayer();
 
+    // 세션 초기화 및 유저 복원
     useEffect(() => {
-        const storedSession = localStorage.getItem('martinee_session_id');
-        const lastActive = localStorage.getItem('martinee_last_active');
+        const storedSession = localStorage.getItem(STORAGE_KEYS.SESSION_ID);
+        const lastActive = localStorage.getItem(STORAGE_KEYS.LAST_ACTIVE);
         const now = Date.now();
 
         let newSessionId = storedSession;
 
-        // Check timeout (30 mins = 1800000ms)
-        if (!storedSession || !lastActive || (now - parseInt(lastActive) > 1800000)) {
+        // 타임아웃 체크 (30분)
+        if (!storedSession || !lastActive || (now - parseInt(lastActive) > SESSION_TIMEOUT_MS)) {
             newSessionId = generateUUID();
-            localStorage.setItem('martinee_session_id', newSessionId);
+            localStorage.setItem(STORAGE_KEYS.SESSION_ID, newSessionId);
         }
 
         setSessionId(newSessionId!);
-        localStorage.setItem('martinee_last_active', now.toString());
+        localStorage.setItem(STORAGE_KEYS.LAST_ACTIVE, now.toString());
 
-        // Check for Native Bridge presence
+        // Native Bridge 감지 로그
         const isAndroidBridge = !!(window as any).AppboyJavascriptInterface;
         const isIosBridge = !!(window as any).webkit?.messageHandlers?.brazeWebMessageHandler;
         console.log(`📊 [Braze] Bridge Status - Android: ${isAndroidBridge}, iOS: ${isIosBridge}`);
 
-        // Restore user if exists
-        const storedUser = localStorage.getItem('martinee_user');
+        // 저장된 유저 복원 (스키마 검증 포함)
+        const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
         if (storedUser) {
             try {
                 const parsed = JSON.parse(storedUser);
@@ -70,63 +88,70 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
                 // changeUser() 후 반드시 Content Cards를 재요청해야 식별된 유저의 카드가 수신됨
                 braze.requestContentCardsRefresh();
             } catch (e) {
-                console.error("Failed to parse stored user", e);
-                localStorage.removeItem('martinee_user');
+                console.error('[SessionContext] Failed to parse stored user:', e);
+                localStorage.removeItem(STORAGE_KEYS.USER);
             }
         }
     }, []);
 
-    // Update last active on any interaction
+    // 액티비티 트래킹 — debounce 적용 (5초에 1회만 localStorage 쓰기)
     useEffect(() => {
+        let timer: ReturnType<typeof setTimeout> | null = null;
+
         const updateActivity = () => {
-            localStorage.setItem('martinee_last_active', Date.now().toString());
+            if (timer) return; // 이미 대기 중이면 무시
+            timer = setTimeout(() => {
+                localStorage.setItem(STORAGE_KEYS.LAST_ACTIVE, Date.now().toString());
+                timer = null;
+            }, ACTIVITY_DEBOUNCE_MS);
         };
+
         window.addEventListener('click', updateActivity);
         window.addEventListener('scroll', updateActivity);
+
         return () => {
             window.removeEventListener('click', updateActivity);
             window.removeEventListener('scroll', updateActivity);
+            if (timer) clearTimeout(timer);
         };
     }, []);
 
     const refreshSession = () => {
         const newId = generateUUID();
         setSessionId(newId);
-        localStorage.setItem('martinee_session_id', newId);
+        localStorage.setItem(STORAGE_KEYS.SESSION_ID, newId);
         return newId;
     };
 
     const login = (userId: string) => {
         const newSession = refreshSession();
 
-        // Braze: Identify user
         console.log(`[Braze] Identifying user on login: ${userId}`);
         braze.changeUser(userId);
         // changeUser() 후 반드시 Content Cards를 재요청해야 식별된 유저의 카드가 수신됨
         braze.requestContentCardsRefresh();
 
-        // Check if user has stored data
-        const storedUser = localStorage.getItem(`user_${userId}`);
+        const storedUser = localStorage.getItem(`${STORAGE_KEYS.USER_PREFIX}${userId}`);
         let newUser: User;
 
         if (storedUser) {
-            const parsed = JSON.parse(storedUser);
-            newUser = {
-                ...parsed,
-                points: parsed.points + 100 // Login bonus
-            };
+            try {
+                const parsed = JSON.parse(storedUser);
+                if (isValidUser(parsed)) {
+                    newUser = { ...parsed, points: parsed.points + 100 };
+                } else {
+                    newUser = { id: userId, points: 100, coupons: [], orders: [] };
+                }
+            } catch {
+                newUser = { id: userId, points: 100, coupons: [], orders: [] };
+            }
         } else {
-            newUser = {
-                id: userId,
-                points: 100,
-                coupons: [],
-                orders: []
-            };
+            newUser = { id: userId, points: 100, coupons: [], orders: [] };
         }
 
         setUser(newUser);
-        localStorage.setItem('martinee_user', JSON.stringify(newUser));
-        localStorage.setItem(`user_${userId}`, JSON.stringify(newUser));
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser));
+        localStorage.setItem(`${STORAGE_KEYS.USER_PREFIX}${userId}`, JSON.stringify(newUser));
 
         pushEvent({
             event_category: 'auth',
@@ -141,7 +166,6 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     const signup = (userId: string) => {
         const newSession = sessionId;
 
-        // Braze: Identify user
         console.log(`[Braze] Identifying user on signup: ${userId}`);
         braze.changeUser(userId);
         // changeUser() 후 반드시 Content Cards를 재요청해야 식별된 유저의 카드가 수신됨
@@ -154,9 +178,9 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
             orders: []
         };
 
-        localStorage.setItem(`user_${userId}`, JSON.stringify(newUser));
+        localStorage.setItem(`${STORAGE_KEYS.USER_PREFIX}${userId}`, JSON.stringify(newUser));
         setUser(newUser);
-        localStorage.setItem('martinee_user', JSON.stringify(newUser));
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser));
 
         pushEvent({
             event_category: 'auth',
@@ -173,7 +197,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
             event_description: 'Welcome coupon issued',
             user_id: userId,
             session_id: newSession,
-            additional_params: { 
+            additional_params: {
                 coupon_name: 'Welcome Sign-up Bonus',
                 coupon_id: 'WELCOME_10_PERCENT',
                 coupon_type: 'Welcome',
@@ -184,34 +208,33 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     const addOrder = (order: Order) => {
         if (!user) return;
-        const updatedUser = {
-            ...user,
-            orders: [order, ...user.orders]
-        };
+        const updatedUser = { ...user, orders: [order, ...user.orders] };
         setUser(updatedUser);
-        localStorage.setItem('martinee_user', JSON.stringify(updatedUser));
-        localStorage.setItem(`user_${user.id}`, JSON.stringify(updatedUser));
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser));
+        localStorage.setItem(`${STORAGE_KEYS.USER_PREFIX}${user.id}`, JSON.stringify(updatedUser));
     };
 
     const logout = () => {
         setUser(null);
-        localStorage.removeItem('martinee_user');
+        localStorage.removeItem(STORAGE_KEYS.USER);
         refreshSession();
-        // Option: braze.changeUser(null) to go back to anonymous, 
-        // but Braze usually handles this by clearing session.
     };
 
+    // Context value 메모이제이션 — 불필요한 하위 컴포넌트 리렌더 방지
+    const value = useMemo<SessionContextType>(() => ({
+        sessionId,
+        user,
+        login,
+        signup,
+        logout,
+        refreshSession,
+        addOrder,
+        isAuthenticated: !!user,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }), [sessionId, user]);
+
     return (
-        <SessionContext.Provider value={{
-            sessionId,
-            user,
-            login,
-            signup,
-            logout,
-            refreshSession,
-            addOrder,
-            isAuthenticated: !!user
-        }}>
+        <SessionContext.Provider value={value}>
             {children}
         </SessionContext.Provider>
     );

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useDataLayer } from '../hooks/useDataLayer';
 import { useSession } from '../context/SessionContext';
+import { formatCartItemsForAnalytics } from '../utils/analyticsHelpers';
 
 export const OrderCompletePage: React.FC = () => {
     const { orderId } = useParams<{ orderId: string }>();
@@ -18,23 +19,13 @@ export const OrderCompletePage: React.FC = () => {
             event_description: 'User viewed order complete page',
             user_id: user?.id || null,
             session_id: sessionId,
-            additional_params: {
-                category1_name: order.items.map(i => i.category),
-                brand_name: order.items.map(i => i.brand),
-                item_name: order.items.map(i => i.name),
-                item_id: order.items.map(i => i.id),
-                item_org_price: order.items.map(i => i.original_price),
-                item_price: order.items.map(i => i.price),
-                item_discount_rate: order.items.map(i => Number((i.discount_rate / 100).toFixed(2))),
-                isSoldout: order.items.map(i => i.stock <= 0),
-                item_img: order.items.map(i => i.image_url),
-                item_size: order.items.map(i => i.selectedSize),
-                item_color: order.items.map(i => i.selectedColor),
-                coupon_name: user?.coupons.length ? 'Welcome Sign-up Bonus' : '',
-                coupon_id: user?.coupons.length ? 'WELCOME_10_PERCENT' : '',
-                coupon_type: user?.coupons.length ? 'Welcome' : '',
+            additional_params: formatCartItemsForAnalytics(order.items, {
+                order_id: orderId,
+                coupon_name:     user?.coupons.length ? 'Welcome Sign-up Bonus' : '',
+                coupon_id:       user?.coupons.length ? 'WELCOME_10_PERCENT' : '',
+                coupon_type:     user?.coupons.length ? 'Welcome' : '',
                 coupon_exp_date: user?.coupons.length ? '2026-12-31' : ''
-            }
+            })
         });
     }, [orderId, sessionId, user?.id, order]);
 

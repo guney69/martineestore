@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import * as braze from '@braze/web-sdk';
+import { BRAZE_PLACEMENTS, ALLOWED_REDIRECT_ORIGINS } from '../../constants';
 
 interface BrazeCard {
     id: string;
@@ -8,6 +9,23 @@ interface BrazeCard {
     imageUrl?: string;
     url?: string;
 }
+
+/** 허용된 오리진으로의 이동만 허용 (오픈 리다이렉트 방지) */
+const isSafeUrl = (url: string): boolean => {
+    try {
+        const parsed = new URL(url);
+        return (ALLOWED_REDIRECT_ORIGINS as readonly string[]).includes(parsed.origin);
+    } catch {
+        return false;
+    }
+};
+
+/** HTML 태그를 제거하고 텍스트만 추출 (XSS 방지) */
+const stripHtml = (html: string): string => {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent ?? tmp.innerText ?? '';
+};
 
 export const BrazePlacements: React.FC = () => {
     const [contentCards, setContentCards] = useState<BrazeCard[]>([]);
@@ -41,7 +59,6 @@ export const BrazePlacements: React.FC = () => {
             setContentCards(cards);
         });
 
-        // Some Braze versions export banner methods on the main braze instance, use casting if necessary
         const brazeObj = braze as any;
         let bannerSubscription: string | undefined;
 
@@ -56,17 +73,14 @@ export const BrazePlacements: React.FC = () => {
                 }));
                 setBanners(b);
             });
-            // Request Banners explicitly by placement_id
             if (typeof brazeObj.requestBannersRefresh === 'function') {
-                brazeObj.requestBannersRefresh(['gnb_banner']);
+                brazeObj.requestBannersRefresh([BRAZE_PLACEMENTS.GNB_BANNER]);
             }
         }
 
-        // Request initial content cards
         braze.requestContentCardsRefresh();
 
         return () => {
-            // Clean up subscriptions
             if (cardSubscription) braze.removeSubscription(cardSubscription);
             if (bannerSubscription && typeof brazeObj.removeSubscription === 'function') {
                 brazeObj.removeSubscription(bannerSubscription);
@@ -79,9 +93,11 @@ export const BrazePlacements: React.FC = () => {
     }
 
     const handleClick = (url?: string) => {
-        if (url) {
+        if (!url) return;
+        if (isSafeUrl(url)) {
             window.location.href = url;
-            // Optionally log click here if custom handling needed, but standard URL clicks are often handled by browser
+        } else {
+            console.warn('[BrazePlacements] Blocked unsafe redirect URL:', url);
         }
     };
 
@@ -89,17 +105,21 @@ export const BrazePlacements: React.FC = () => {
         <div className="w-full bg-gray-50 border-b border-gray-200">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
                 <div className="flex flex-col space-y-2">
-                    {/* Render Banners */}
+                    {/* Render Banners — 텍스트만 렌더링 (XSS 방지) */}
                     {banners.map(banner => (
-                        <div key={banner.id} className="w-full bg-black text-white px-4 py-2 text-sm text-center roundedcursor-pointer cursor-pointer" dangerouslySetInnerHTML={{ __html: banner.description }}>
+                        <div
+                            key={banner.id}
+                            className="w-full bg-black text-white px-4 py-2 text-sm text-center rounded cursor-pointer"
+                        >
+                            {banner.description}
                         </div>
                     ))}
 
                     {/* Render Content Cards */}
                     <div className="flex overflow-x-auto space-x-4 py-2 custom-scrollbar">
                         {contentCards.map(card => (
-                            <div 
-                                key={card.id} 
+                            <div
+                                key={card.id}
                                 onClick={() => handleClick(card.url)}
                                 className="flex-none w-64 bg-white border border-gray-200 rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                             >

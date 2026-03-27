@@ -5,10 +5,8 @@ interface Braze {
 }
 
 interface Amplitude {
-    getInstance: () => {
-        logEvent: (eventName: string, eventProperties?: any) => void;
-        setUserId: (userId: string | null) => void;
-    };
+    track: (eventName: string, eventProperties?: any) => void;
+    setUserId: (userId: string | null) => void;
 }
 
 interface Appsflyer {
@@ -41,14 +39,14 @@ export const sdkAdapters = {
     amplitude: {
         logEvent: (eventName: string, props: any) => {
             if (window.amplitude) {
-                window.amplitude.getInstance().logEvent(eventName, props);
+                window.amplitude.track(eventName, props);
                 console.log('✅ [Amplitude] Event:', eventName, props);
             } else {
                 console.log('⚠️ [Amplitude] Not initialized:', eventName);
             }
         },
         identify: (userId: string | null) => {
-            if (window.amplitude) window.amplitude.getInstance().setUserId(userId);
+            if (window.amplitude) window.amplitude.setUserId(userId);
         }
     },
     appsflyer: {

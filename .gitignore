@@ -42,3 +42,8 @@ local.properties
 
 # Vercel
 .vercel
+
+# Environment variables
+.env
+.env.local
+.env.*.local
