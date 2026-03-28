@@ -7,6 +7,7 @@ interface Braze {
 interface Amplitude {
     track: (eventName: string, eventProperties?: any) => void;
     setUserId: (userId: string | null) => void;
+    setSessionId: (sessionId: number) => void;
 }
 
 interface Appsflyer {
@@ -46,7 +47,16 @@ export const sdkAdapters = {
             }
         },
         identify: (userId: string | null) => {
-            if (window.amplitude) window.amplitude.setUserId(userId);
+            if (window.amplitude) {
+                window.amplitude.setUserId(userId);
+                console.log('✅ [Amplitude] User ID set:', userId);
+            }
+        },
+        setSessionId: (sessionId: number) => {
+            if (window.amplitude) {
+                window.amplitude.setSessionId(sessionId);
+                console.log('✅ [Amplitude] Session ID set:', sessionId);
+            }
         }
     },
     appsflyer: {
