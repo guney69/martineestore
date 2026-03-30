@@ -24,6 +24,8 @@ braze.automaticallyShowInAppMessages();
 braze.openSession();
 // Request location permission for tracking
 // braze.requestLocationPermission(); // Note: This should usually be triggered by a user action.
+braze.requestBannersRefresh();          // ← 이게 없으면 Banner 데이터 자체를 안 가져옴
+
 
 // Initialize Amplitude Browser SDK 2
 amplitude.init(import.meta.env.VITE_AMPLITUDE_API_KEY ?? '8d5db2caf7854f49baad6adfb3101257', {
