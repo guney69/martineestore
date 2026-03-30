@@ -13,7 +13,8 @@ const isDev = import.meta.env.DEV;
 braze.initialize(import.meta.env.VITE_BRAZE_API_KEY ?? 'd884a2f3-e6a9-4005-9e93-ba68d88518af', {
     baseUrl: import.meta.env.VITE_BRAZE_BASE_URL ?? 'sdk.iad-07.braze.com',
     enableLogging: isDev,
-} as Parameters<typeof braze.initialize>[1]);
+    allowUserSuppliedJavascript: true, // Required to enable HTML Banners on Web
+});
 
 // Make braze globally available for sdkAdapters and debugging
 (window as any).braze = braze;
