@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as braze from '@braze/web-sdk';
 import { BRAZE_PLACEMENTS, ALLOWED_REDIRECT_ORIGINS } from '../../constants';
 
@@ -23,7 +23,8 @@ const isSafeUrl = (url: string): boolean => {
 
 export const BrazePlacements: React.FC = () => {
     const [contentCards, setContentCards] = useState<BrazeCard[]>([]);
-    const [banners, setBanners] = useState<BrazeCard[]>([]);
+    const [hasBanner, setHasBanner] = useState(false);
+    const bannerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         // Subscribe to Content Cards
@@ -57,16 +58,20 @@ export const BrazePlacements: React.FC = () => {
         let bannerSubscription: string | undefined;
 
         if (typeof brazeObj.subscribeToBannersUpdates === 'function') {
-            bannerSubscription = brazeObj.subscribeToBannersUpdates((updates: any) => {
-                // updates는 배열이 아니라 { [placementId: string]: Banner } 딕셔너리 객체임
-                const bannerList = updates ? Object.values(updates).filter(Boolean) : [];
-                console.log(`✅ [Braze] Banners 수신: ${bannerList.length}개`);
-                const b = bannerList.map((banner: any) => ({
-                    id: banner.id,
-                    description: banner.html || banner.text || '',
-                }));
-                setBanners(b);
+            bannerSubscription = brazeObj.subscribeToBannersUpdates((updates: Record<string, any>) => {
+                const banner = updates?.[BRAZE_PLACEMENTS.GNB_BANNER];
+                console.log(`✅ [Braze] Banner 수신: placement=${BRAZE_PLACEMENTS.GNB_BANNER}`, banner);
+
+                if (banner && bannerRef.current) {
+                    // Braze 공식 insertBanner API로 HTML 렌더링
+                    bannerRef.current.innerHTML = '';
+                    brazeObj.insertBanner(banner, bannerRef.current);
+                    setHasBanner(true);
+                } else {
+                    setHasBanner(false);
+                }
             });
+
             if (typeof brazeObj.requestBannersRefresh === 'function') {
                 brazeObj.requestBannersRefresh([BRAZE_PLACEMENTS.GNB_BANNER]);
             }
@@ -82,7 +87,17 @@ export const BrazePlacements: React.FC = () => {
         };
     }, []);
 
-    if (contentCards.length === 0 && banners.length === 0) {
+    // bannerRef가 마운트된 후 업데이트가 왔을 때를 위해 별도 effect
+    useEffect(() => {
+        if (!hasBanner || !bannerRef.current) return;
+        const banner = (braze as any).getBanner?.(BRAZE_PLACEMENTS.GNB_BANNER);
+        if (banner) {
+            bannerRef.current.innerHTML = '';
+            (braze as any).insertBanner(banner, bannerRef.current);
+        }
+    }, [hasBanner]);
+
+    if (contentCards.length === 0 && !hasBanner) {
         return null;
     }
 
@@ -99,15 +114,8 @@ export const BrazePlacements: React.FC = () => {
         <div className="w-full bg-gray-50 border-b border-gray-200">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
                 <div className="flex flex-col space-y-2">
-                    {/* Render Banners — 텍스트만 렌더링 (XSS 방지) */}
-                    {banners.map(banner => (
-                        <div
-                            key={banner.id}
-                            className="w-full bg-black text-white px-4 py-2 text-sm text-center rounded cursor-pointer"
-                        >
-                            {banner.description}
-                        </div>
-                    ))}
+                    {/* Render Banner via Braze insertBanner API */}
+                    <div ref={bannerRef} className={hasBanner ? 'w-full' : 'hidden'} />
 
                     {/* Render Content Cards */}
                     <div className="flex overflow-x-auto space-x-4 py-2 custom-scrollbar">
