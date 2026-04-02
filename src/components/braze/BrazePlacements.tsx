@@ -81,7 +81,7 @@ export const BrazePlacements: React.FC = () => {
     useEffect(() => {
         if (!bannerObj || !bannerRef.current) return;
         bannerRef.current.innerHTML = '';
-        (braze as any).insertBanner(bannerRef.current, bannerObj);
+        (braze as any).insertBanner(bannerObj, bannerRef.current);
     // bannerObj가 바뀔 때마다 실행 — ref는 컴포넌트가 렌더된 후엔 항상 있음
     }, [bannerObj]);
 
